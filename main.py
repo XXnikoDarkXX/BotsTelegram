@@ -2,7 +2,11 @@ import requests
 import xml.etree.ElementTree as ET
 import unicodedata
 import datetime
-
+import asyncio
+from telegram import Bot
+import os
+from dotenv import load_dotenv
+load_dotenv()
 # === CONFIGURACIÓN ===
 
 PALABRAS_INFORMATICA = [
@@ -13,14 +17,18 @@ PALABRAS_SELECCION = [
     "oposicion", "proceso selectivo", "aspirantes", "cuerpo", "ingreso", "funcionario"
 ]
 
+# Telegram
+
+
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+CHAT_ID = "@avisos_oposiciones_informaticaa"
+
 # =====================
 
 def normaliza(s: str) -> str:
-    """Quita acentos y pasa a minúsculas ASCII."""
     return unicodedata.normalize('NFKD', s).encode('ASCII', 'ignore').decode().lower()
 
 def filtra_oposiciones(root) -> list:
-    """Filtra títulos del BOE con coincidencias relevantes."""
     resultados = []
 
     for item in root.findall(".//item"):
@@ -57,19 +65,50 @@ def procesar_fecha(fecha: str):
 
     return filtra_oposiciones(root)
 
+# --- FUNCIONES ASÍNCRONAS PARA TELEGRAM ---
+
+async def enviar_mensaje_telegram_async(texto: str):
+    bot = Bot(token=BOT_TOKEN)
+    try:
+        await bot.send_message(
+            chat_id=CHAT_ID,
+            text=texto,
+            parse_mode="HTML",
+            disable_web_page_preview=False
+        )
+        print("✅ Mensaje enviado correctamente al canal.")
+    except Exception as e:
+        print(f"❌ Error al enviar mensaje: {e}")
+
+def enviar_mensaje_telegram(texto: str):
+    asyncio.run(enviar_mensaje_telegram_async(texto))
+
+# --- MAIN ---
+
 def main():
     hoy = datetime.date.today()
     fecha_str = hoy.strftime('%Y%m%d')
 
     resultados = procesar_fecha(fecha_str)
+
     if resultados:
-        print(f"\n📅 BOE del {fecha_str}:")
+        print(f"📅 BOE del {fecha_str}: {len(resultados)} resultado(s) encontrado(s)")
         for o in resultados:
-            print(f"- {o['titulo']}")
-            print(f"    HTML: {o['url_html']}")
-            print(f"    PDF:  {o['url_pdf']}\n")
+            mensaje = (
+                f"<b>📅 BOE del {fecha_str}</b>\n"
+                f"<b>📌 {o['titulo']}</b>\n"
+                f"<a href='{o['url_html']}'>🔗 Ver en BOE</a>\n"
+                f"<a href='{o['url_pdf']}'>📄 PDF</a>"
+            )
+            print(f"Enviando mensaje al canal:\n{mensaje}\n")
+            enviar_mensaje_telegram(mensaje)
     else:
-        print(f"No se encontraron oposiciones de informática en el BOE del {fecha_str}.")
+        mensaje = (
+            f"<b>📅 BOE del {fecha_str}</b>\n"
+            f"❌ No se encontraron oposiciones de informática publicadas hoy."
+        )
+        print(mensaje)
+        enviar_mensaje_telegram(mensaje)
 
 if __name__ == '__main__':
     main()

@@ -1,0 +1,16 @@
+sudo nano /etc/systemd/system/minecraft-bedrock.service
+
+[Unit]
+Description=Servidor Minecraft Bedrock
+After=network.target
+
+[Service]
+User=minecraft
+WorkingDirectory=/home/minecraft/minecraft
+ExecStart=/home/minecraft/minecraft/bedrock_server
+ExecStop=/bin/kill -SIGINT $MAINPID
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

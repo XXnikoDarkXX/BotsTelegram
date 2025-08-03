@@ -5,9 +5,9 @@ Description=Servidor Minecraft Bedrock
 After=network.target
 
 [Service]
-User=minecraft
-WorkingDirectory=/home/minecraft/minecraft
-ExecStart=/home/minecraft/minecraft/bedrock_server
+User=nicolas
+WorkingDirectory=/home/nicolas/Descargas/bedrock-server-1.21.95.1
+ExecStart=/home/nicolas/Descargas/bedrock-server-1.21.95.1/bedrock_server
 ExecStop=/bin/kill -SIGINT $MAINPID
 Restart=always
 RestartSec=5
